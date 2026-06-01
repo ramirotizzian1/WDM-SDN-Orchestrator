@@ -1,0 +1,18 @@
+Welcome to Open Network Operating System (ONOS)!
+[1;31m     ____  _  ______  ____     [0m
+[1;31m    / __ \/ |/ / __ \/ __/   [0m
+[1;31m   / /_/ /    / /_/ /\ \     [0m
+[1;31m   \____/_/|_/\____/___/     [0m
+[1;31m                               [0m
+Documentation: wiki.onosproject.org      
+Tutorials:     tutorials.onosproject.org 
+Mailing lists: lists.onosproject.org     
+
+Come help out! Find out how at: contribute.onosproject.org 
+
+Hit '[1m<tab>[0m' for a list of available commands
+and '[1m[cmd] --help[0m' for help on a specific command.
+Hit '[1m<ctrl-d>[0m' or type '[1mlogout[0m' to exit ONOS session.
+
+[?1h=[90m~[0m                                                                                                                                                                                                        [?2004honos@root > help
+[?1l>[?2004l[?1h=[H[Jbundle                            Enter the subshell[147C bundle:capabilities               Displays OSGi capabilities of a given bundles.[119C bundle:classes                    Displays a list of classes/resources contained in the bundle[105C bundle:diag                       Displays diagnostic information why a bundle is not Active[107C bundle:dynamic-import             Enables/disables dynamic-import for a given bundle.[114C bundle:find-class                 Locates a specified class in any deployed bundle[117C bundle:headers                    Displays OSGi headers of a given bundles.[124C bundle:id                         Gets the bundle ID.[146C bundle:info                       Displays detailed information of a given bundles.[116C bundle:install                    Installs one or more bundles.[136C bundle:list                       Lists all installed bundles.[137C bundle:load-test                  Load test bundle lifecycle[139C bundle:refresh                    Refresh bundles.[149C bundle:requirements               Displays OSGi requirements of a given bundles.[119C bundle:resolve                    Resolve bundles.[149C bundle:restart                    Restarts bundles.[148C bundle:services                   Lists OSGi services per Bundle[135C bundle:start                      Starts bundles.[150C bundle:start-level                Gets or sets the start level of a bundle.[124C bundle:status                     Get the bundle current status[136C bundle:stop                       Stop bundles.[152C bundle:tree-show                  Shows the tree of bundles based on the wiring information.[107C bundle:uninstall                  Uninstall bundles.[147C :

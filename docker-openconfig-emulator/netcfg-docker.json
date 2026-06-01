@@ -1,0 +1,48 @@
+{
+  "devices": {
+    "netconf:10.42.0.1:11001": {
+      "netconf": {
+        "ip": "10.42.0.1",
+        "port": 11001,
+        "username": "root",
+        "password": "root"
+      },
+      "basic": {
+        "driver": "cassini-openconfig"
+      }
+    },
+    "netconf:10.42.0.1:11002": {
+      "netconf": {
+        "ip": "10.42.0.1",
+        "port": 11002,
+        "username": "root",
+        "password": "root"
+      },
+      "basic": {
+        "driver": "cassini-openconfig"
+      }
+    },
+    "netconf:10.42.0.1:11003": {
+      "netconf": {
+        "ip": "10.42.0.1",
+        "port": 11003,
+        "username": "root",
+        "password": "root"
+      },
+      "basic": {
+        "driver": "cassini-openconfig"
+      }
+    },
+    "netconf:10.42.0.1:11004": {
+      "netconf": {
+        "ip": "10.42.0.1",
+        "port": 11004,
+        "username": "root",
+        "password": "root"
+      },
+      "basic": {
+        "driver": "cassini-openconfig"
+      }
+    }
+  }
+}

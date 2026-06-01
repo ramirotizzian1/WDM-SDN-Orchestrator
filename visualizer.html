@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visor de Topología Óptica (SDN)</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <!-- Vis.js Network -->
+    <script type="text/javascript"
+        src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/standalone/umd/vis-network.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: rgba(30, 41, 59, 0.7);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #38bdf8;
+            --accent-glow: rgba(56, 189, 248, 0.4);
+            --node-color: #1e293b;
+            --node-border: #38bdf8;
+            --edge-color: #64748b;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #020617 0%, var(--bg-color) 100%);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Glassmorphism Header */
+        header {
+            background: var(--panel-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+            z-index: 10;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            background: -webkit-linear-gradient(0deg, #fff, var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 400;
+            margin-top: 4px;
+        }
+
+        /* Main Container */
+        main {
+            display: flex;
+            flex: 1;
+            position: relative;
+        }
+
+        /* Network Graph Area */
+        #mynetwork {
+            flex: 1;
+            height: 100%;
+            min-height: 500px;
+            /* Ensure it takes space */
+            outline: none;
+        }
+
+        /* Info Panel */
+        #info-panel {
+            width: 320px;
+            background: var(--panel-bg);
+            backdrop-filter: blur(12px);
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 2rem;
+            box-shadow: -4px 0 30px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow-y: auto;
+        }
+
+        #info-panel h2 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-top: 0;
+            margin-bottom: 1.5rem;
+            color: var(--accent);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 0.5rem;
+        }
+
+        .info-card {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .info-card:hover {
+            border-color: var(--accent-glow);
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .info-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .info-label {
+            color: var(--text-muted);
+        }
+
+        .info-value {
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .badge {
+            background: rgba(56, 189, 248, 0.1);
+            color: var(--accent);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        /* Loading / Error */
+        #status {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            pointer-events: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div>
+            <h1>ONOS-WDM Topology Explorer</h1>
+            <div class="subtitle">Laboratorio de Comunicaciones Ópticas Virtualizado</div>
+        </div>
+        <div>
+            <span class="badge">Live View</span>
+        </div>
+    </header>
+
+    <main>
+        <div id="status">Cargando topología...</div>
+        <div id="mynetwork"></div>
+        <div id="info-panel">
+            <h2>Detalles del Elemento</h2>
+            <div id="element-details">
+                <p style="color: var(--text-muted); font-size: 0.9rem;">Selecciona un nodo o enlace en el grafo para ver
+                    sus propiedades.</p>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Simulamos la carga de topology.json usando el mismo formato del proyecto
+        // En un caso real se haría un fetch('topology.json') si se sirve en un servidor HTTP
+        const topologyData = {
+            "nodes": [
+                { "id": "ROADM-1", "type": "roadm", "location": "Rio Cuarto", x: 0, y: -150 },
+                { "id": "ROADM-2", "type": "roadm", "location": "Cordoba", x: 150, y: 100 },
+                { "id": "ROADM-3", "type": "roadm", "location": "Villa Maria", x: -150, y: 100 }
+            ],
+            "links": [
+                { "source": "ROADM-1", "target": "ROADM-2", "length_km": 215, "loss_coef_db_km": 0.22, "type": "G.652" },
+                { "id": "link-2-3", "source": "ROADM-2", "target": "ROADM-3", "length_km": 150, "loss_coef_db_km": 0.22, "type": "G.652" },
+                { "id": "link-3-1", "source": "ROADM-3", "target": "ROADM-1", "length_km": 130, "loss_coef_db_km": 0.22, "type": "G.652" }
+            ]
+        };
+
+        // Preparar nodos para Vis.js
+        const nodes = new vis.DataSet(topologyData.nodes.map(n => ({
+            id: n.id,
+            label: n.id,
+            x: n.x,
+            y: n.y,
+            title: `Location: ${n.location}`,
+            shape: 'hexagon',
+            size: 30,
+            color: {
+                background: '#1e293b',
+                border: '#38bdf8',
+                highlight: { background: '#0f172a', border: '#7dd3fc' }
+            },
+            font: { color: '#f8fafc', face: 'Inter' },
+            data: n // Guardar datos originales para el panel
+        })));
+
+        // Preparar enlaces para Vis.js
+        const edges = new vis.DataSet(topologyData.links.map((l, index) => {
+            const edgeId = l.id || `link-${index}`;
+            return {
+                id: edgeId,
+                from: l.source,
+                to: l.target,
+                label: `${l.length_km} km`,
+                font: { align: 'top', color: '#94a3b8', strokeWidth: 0, face: 'Inter', size: 12 },
+                color: { color: '#64748b', highlight: '#38bdf8' },
+                width: 2,
+                smooth: { type: 'continuous' },
+                data: l // Guardar datos originales
+            };
+        }));
+
+        const container = document.getElementById('mynetwork');
+        const status = document.getElementById('status');
+
+        try {
+            const data = { nodes: nodes, edges: edges };
+            const options = {
+                interaction: { hover: true, tooltipDelay: 200 },
+                physics: false // Disabled physics to prevent nodes flying out of bounds
+            };
+
+            const network = new vis.Network(container, data, options);
+
+            // Adjust layout manually since physics is off
+            network.moveTo({ scale: 1.0 });
+            status.style.display = 'none';
+
+            // Re-fit after drawing
+            network.once("afterDrawing", function () {
+                network.fit({ animation: true });
+            });
+
+        } catch (err) {
+            status.innerHTML = "Error rendering graph: " + err.message;
+            status.style.color = "red";
+            console.error(err);
+        }
+
+        // Manejar eventos de click para actualizar el panel lateral
+        const detailsPanel = document.getElementById('element-details');
+
+        network.on("selectNode", function (params) {
+            const nodeId = params.nodes[0];
+            const nodeData = nodes.get(nodeId).data;
+
+            detailsPanel.innerHTML = `
+                <div class="info-card">
+                    <div class="info-row">
+                        <span class="info-label">ID Nodo</span>
+                        <span class="info-value" style="color:var(--accent)">${nodeData.id}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Tipo</span>
+                        <span class="info-value">${nodeData.type.toUpperCase()}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Ubicación</span>
+                        <span class="info-value">${nodeData.location}</span>
+                    </div>
+                </div>
+            `;
+        });
+
+        network.on("selectEdge", function (params) {
+            // Si también hay un nodo seleccionado, preferimos mostrar el nodo
+            if (params.nodes.length > 0) return;
+
+            const edgeId = params.edges[0];
+            const edgeData = edges.get(edgeId).data;
+
+            const loss = (edgeData.length_km * edgeData.loss_coef_db_km).toFixed(2);
+
+            detailsPanel.innerHTML = `
+                <div class="info-card">
+                    <div class="info-row">
+                        <span class="info-label">Enlace</span>
+                        <span class="info-value" style="color:var(--accent)">${edgeData.source} ↔ ${edgeData.target}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Tipo Fibra</span>
+                        <span class="info-value">${edgeData.type}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Distancia</span>
+                        <span class="info-value">${edgeData.length_km} km</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Pérdida Total</span>
+                        <span class="info-value" style="color:#f87171">${loss} dB</span>
+                    </div>
+                </div>
+            `;
+        });
+
+        network.on("deselectNode", function () {
+            if (network.getSelectedEdges().length === 0) {
+                resetPanel();
+            }
+        });
+
+        network.on("deselectEdge", function () {
+            if (network.getSelectedNodes().length === 0) {
+                resetPanel();
+            }
+        });
+
+        function resetPanel() {
+            detailsPanel.innerHTML = `<p style="color: var(--text-muted); font-size: 0.9rem;">Selecciona un nodo o enlace en el grafo para ver sus propiedades.</p>`;
+        }
+    </script>
+</body>
+
+</html>

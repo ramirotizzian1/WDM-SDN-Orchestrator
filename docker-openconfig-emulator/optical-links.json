@@ -1,0 +1,28 @@
+{
+  "links": {
+    "netconf:10.42.0.1:11001/201-netconf:10.42.0.1:11002/201": {
+      "basic": { "type": "OPTICAL", "isDurable": true }
+    },
+    "netconf:10.42.0.1:11002/201-netconf:10.42.0.1:11001/201": {
+      "basic": { "type": "OPTICAL", "isDurable": true }
+    },
+    "netconf:10.42.0.1:11002/202-netconf:10.42.0.1:11003/201": {
+      "basic": { "type": "OPTICAL", "isDurable": true }
+    },
+    "netconf:10.42.0.1:11003/201-netconf:10.42.0.1:11002/202": {
+      "basic": { "type": "OPTICAL", "isDurable": true }
+    },
+    "netconf:10.42.0.1:11003/202-netconf:10.42.0.1:11004/201": {
+      "basic": { "type": "OPTICAL", "isDurable": true }
+    },
+    "netconf:10.42.0.1:11004/201-netconf:10.42.0.1:11003/202": {
+      "basic": { "type": "OPTICAL", "isDurable": true }
+    },
+    "netconf:10.42.0.1:11004/202-netconf:10.42.0.1:11001/202": {
+      "basic": { "type": "OPTICAL", "isDurable": true }
+    },
+    "netconf:10.42.0.1:11001/202-netconf:10.42.0.1:11004/202": {
+      "basic": { "type": "OPTICAL", "isDurable": true }
+    }
+  }
+}

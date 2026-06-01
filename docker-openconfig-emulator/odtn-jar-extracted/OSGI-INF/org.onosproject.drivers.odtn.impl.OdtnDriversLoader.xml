@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scr:component xmlns:scr="http://www.osgi.org/xmlns/scr/v1.3.0" name="org.onosproject.drivers.odtn.impl.OdtnDriversLoader" immediate="true" activate="activate" deactivate="deactivate">
+  <reference name="defaultDriverProviderService" cardinality="1..1" interface="org.onosproject.net.driver.DefaultDriverProviderService" field="defaultDriverProviderService"/>
+  <reference name="driverAdminService" cardinality="1..1" interface="org.onosproject.net.driver.DriverAdminService" field="driverAdminService"/>
+  <implementation class="org.onosproject.drivers.odtn.impl.OdtnDriversLoader"/>
+</scr:component>

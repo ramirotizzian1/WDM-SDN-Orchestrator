@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<app name="org.onosproject.drivers.odtn-driver" origin="ONOS Community" version="3.0.0-SNAPSHOT"
+        title="ODTN Driver" category="Drivers" url="https://wiki.onosproject.org/display/ODTN/ODTN"
+        featuresRepo="mvn:org.onosproject/onos-drivers-odtn-driver/3.0.0-SNAPSHOT/xml/features"
+        features="onos-drivers-odtn-driver" apps="org.onosproject.restsb,org.onosproject.netconf,org.onosproject.config,org.onosproject.odtn-api,org.onosproject.drivers.netconf,org.onosproject.drivers.optical,org.onosproject.optical-model,org.onosproject.drivers.gnmi">
+    <description>Drivers related to ODTN</description>
+    <artifact>mvn:org.onosproject/onos-drivers-odtn-driver/3.0.0-SNAPSHOT</artifact>
+    <artifact>mvn:org.onosproject/onos-drivers-utilities/3.0.0-SNAPSHOT</artifact>
+</app>

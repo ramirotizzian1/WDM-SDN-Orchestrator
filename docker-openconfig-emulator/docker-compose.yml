@@ -1,0 +1,52 @@
+version: '3.8'
+
+# Esta es una plantilla base para levantar simuladores basados en OpenConfig.
+# Utilizamos la imagen oficial de ONF (oc-cassini) que ya viene pre-cargada 
+# con Netopeer2 y los modelos YANG de OpenConfig para terminal devices.
+
+x-netopeer-base: &netopeer-base
+  image: onosproject/oc-cassini:0.21
+
+services:
+  roadm-1:
+    <<: *netopeer-base
+    container_name: oc-cassini-1
+    networks:
+      optica_net:
+        ipv4_address: 172.20.0.11
+    ports:
+      - "11001:830"
+
+  roadm-2:
+    <<: *netopeer-base
+    container_name: oc-cassini-2
+    networks:
+      optica_net:
+        ipv4_address: 172.20.0.12
+    ports:
+      - "11002:830"
+
+  roadm-3:
+    <<: *netopeer-base
+    container_name: oc-cassini-3
+    networks:
+      optica_net:
+        ipv4_address: 172.20.0.13
+    ports:
+      - "11003:830"
+
+  roadm-4:
+    <<: *netopeer-base
+    container_name: oc-cassini-4
+    networks:
+      optica_net:
+        ipv4_address: 172.20.0.14
+    ports:
+      - "11004:830"
+
+networks:
+  optica_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24

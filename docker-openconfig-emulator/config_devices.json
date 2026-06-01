@@ -1,0 +1,94 @@
+{
+    "netconf:10.42.0.1:11004": {
+        "basic": {
+            "driver": "odtn"
+        },
+        "netconf": {
+            "ip": "10.42.0.1",
+            "port": 11004,
+            "username": "root",
+            "password": "root"
+        }
+    },
+    "netconf:10.42.0.1:11003": {
+        "basic": {
+            "driver": "cassini-openconfig"
+        },
+        "netconf": {
+            "ip": "10.42.0.1",
+            "port": 11003,
+            "username": "root",
+            "password": "root"
+        }
+    },
+    "netconf:10.42.0.1:11002": {
+        "basic": {
+            "driver": "terminal-device"
+        },
+        "netconf": {
+            "ip": "10.42.0.1",
+            "port": 11002,
+            "username": "root",
+            "password": "root"
+        }
+    },
+    "netconf:10.42.0.1:11001": {
+        "netconf": {
+            "ip": "10.42.0.1",
+            "port": 11001,
+            "username": "root",
+            "password": "root"
+        },
+        "basic": {
+            "driver": "cassini-ocnos"
+        }
+    },
+    "of:0000000000000002": {
+        "classifiers": [
+            {
+                "ethernet-type": "LLDP",
+                "target-queue": 0
+            },
+            {
+                "ethernet-type": "BDDP",
+                "target-queue": 0
+            }
+        ]
+    },
+    "of:0000000000000001": {
+        "classifiers": [
+            {
+                "ethernet-type": "LLDP",
+                "target-queue": 0
+            },
+            {
+                "ethernet-type": "BDDP",
+                "target-queue": 0
+            }
+        ]
+    },
+    "of:0000000000000004": {
+        "classifiers": [
+            {
+                "ethernet-type": "LLDP",
+                "target-queue": 0
+            },
+            {
+                "ethernet-type": "BDDP",
+                "target-queue": 0
+            }
+        ]
+    },
+    "of:0000000000000003": {
+        "classifiers": [
+            {
+                "ethernet-type": "LLDP",
+                "target-queue": 0
+            },
+            {
+                "ethernet-type": "BDDP",
+                "target-queue": 0
+            }
+        ]
+    }
+}

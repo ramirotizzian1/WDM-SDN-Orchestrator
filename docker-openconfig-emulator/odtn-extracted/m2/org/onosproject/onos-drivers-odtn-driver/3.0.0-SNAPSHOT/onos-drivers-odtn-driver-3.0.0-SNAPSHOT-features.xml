@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<features xmlns="http://karaf.apache.org/xmlns/features/v1.2.0"
+          name="org.onosproject-onos-drivers-odtn-driver">
+    <feature name="onos-drivers-odtn-driver" version="3.0.0-SNAPSHOT"
+             description="ODTN Driver">
+        <feature>onos-api</feature>
+        <bundle>mvn:org.onosproject/onos-drivers-odtn-driver/3.0.0-SNAPSHOT</bundle>
+        <bundle>mvn:org.onosproject/onos-drivers-utilities/3.0.0-SNAPSHOT</bundle>
+    </feature>
+</features>

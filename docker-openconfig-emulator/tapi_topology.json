@@ -1,0 +1,13 @@
+{
+    "ietf-restconf:errors": [
+        {
+            "error": {
+                "error-type": "protocol",
+                "error-tag": "invalid-value",
+                "error-app-tag": "handleGetRequest",
+                "error-path": "tapi-common:context/tapi-topology:topology-context/topology=onos-tapi-topology",
+                "error-message": "Resource not found"
+            }
+        }
+    ]
+}

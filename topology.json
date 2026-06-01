@@ -1,0 +1,89 @@
+{
+    "nodes": [
+        {
+            "id": "ROADM-1",
+            "type": "roadm",
+            "location": "Rio Cuarto",
+            "hardware": "Lumentum Whitebox",
+            "degrees": 2,
+            "status": "up",
+            "mgmt_ip": "10.42.0.1:1831"
+        },
+        {
+            "id": "ROADM-2",
+            "type": "roadm",
+            "location": "Cordoba",
+            "hardware": "Lumentum Whitebox",
+            "degrees": 3,
+            "status": "up",
+            "mgmt_ip": "10.42.0.1:1832"
+        },
+        {
+            "id": "ROADM-3",
+            "type": "roadm",
+            "location": "Villa Maria",
+            "hardware": "Lumentum Whitebox",
+            "degrees": 2,
+            "status": "degraded",
+            "mgmt_ip": "10.42.0.1:1833"
+        },
+        {
+            "id": "ROADM-4",
+            "type": "roadm",
+            "location": "San Francisco",
+            "hardware": "Lumentum Whitebox",
+            "degrees": 2,
+            "status": "up",
+            "mgmt_ip": "10.42.0.1:1834"
+        }
+    ],
+    "links": [
+        {
+            "source": "ROADM-1",
+            "target": "ROADM-2",
+            "length_km": 215,
+            "loss_coef_db_km": 0.22,
+            "type": "G.652",
+            "osnr_db": 22.5,
+            "modulation": "QPSK",
+            "spans": 3,
+            "status": "active"
+        },
+        {
+            "id": "link-2-3",
+            "source": "ROADM-2",
+            "target": "ROADM-3",
+            "length_km": 150,
+            "loss_coef_db_km": 0.22,
+            "type": "G.652",
+            "osnr_db": 26.1,
+            "modulation": "16-QAM",
+            "spans": 2,
+            "status": "active"
+        },
+        {
+            "id": "link-3-4",
+            "source": "ROADM-3",
+            "target": "ROADM-4",
+            "length_km": 140,
+            "loss_coef_db_km": 0.22,
+            "type": "G.652",
+            "osnr_db": 27.2,
+            "modulation": "16-QAM",
+            "spans": 2,
+            "status": "active"
+        },
+        {
+            "id": "link-4-1",
+            "source": "ROADM-4",
+            "target": "ROADM-1",
+            "length_km": 160,
+            "loss_coef_db_km": 0.22,
+            "type": "G.652",
+            "osnr_db": 25.8,
+            "modulation": "16-QAM",
+            "spans": 2,
+            "status": "active"
+        }
+    ]
+}

@@ -1,0 +1,10 @@
+#!/usr/bin/expect -f
+spawn docker exec -it oc-cassini-1 netopeer2-cli
+expect ">"
+send "connect --host 127.0.0.1 --port 830 --login root\r"
+expect "Password:"
+send "root\r"
+expect ">"
+send "status\r"
+expect ">"
+send "exit\r"

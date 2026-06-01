@@ -1,0 +1,22 @@
+# Entornos virtuales
+.venv/
+env/
+__pycache__/
+*.pyc
+
+# Node
+node_modules/
+dist/
+.npm/
+
+# IDEs y SO
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# Logs
+*.log
+
+# Git
+.git/

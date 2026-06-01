@@ -1,0 +1,84 @@
+{
+    "devices": [
+        {
+            "id": "of:0000000000000003",
+            "type": "SWITCH",
+            "available": true,
+            "role": "MASTER",
+            "mfr": "Nicira, Inc.",
+            "hw": "Open vSwitch",
+            "sw": "3.3.4",
+            "serial": "None",
+            "driver": "default",
+            "chassisId": "3",
+            "lastUpdate": "1780334886379",
+            "humanReadableLastUpdate": "connected 7m6s ago",
+            "annotations": {
+                "channelId": "10.42.0.1:51892",
+                "datapathDescription": "s3",
+                "managementAddress": "10.42.0.1",
+                "protocol": "OF_14"
+            }
+        },
+        {
+            "id": "of:0000000000000004",
+            "type": "SWITCH",
+            "available": true,
+            "role": "MASTER",
+            "mfr": "Nicira, Inc.",
+            "hw": "Open vSwitch",
+            "sw": "3.3.4",
+            "serial": "None",
+            "driver": "default",
+            "chassisId": "4",
+            "lastUpdate": "1780334886379",
+            "humanReadableLastUpdate": "connected 7m6s ago",
+            "annotations": {
+                "channelId": "10.42.0.1:47388",
+                "datapathDescription": "s4",
+                "managementAddress": "10.42.0.1",
+                "protocol": "OF_14"
+            }
+        },
+        {
+            "id": "of:0000000000000001",
+            "type": "SWITCH",
+            "available": true,
+            "role": "MASTER",
+            "mfr": "Nicira, Inc.",
+            "hw": "Open vSwitch",
+            "sw": "3.3.4",
+            "serial": "None",
+            "driver": "default",
+            "chassisId": "1",
+            "lastUpdate": "1780334886379",
+            "humanReadableLastUpdate": "connected 7m6s ago",
+            "annotations": {
+                "channelId": "10.42.0.1:50101",
+                "datapathDescription": "s1",
+                "managementAddress": "10.42.0.1",
+                "protocol": "OF_14"
+            }
+        },
+        {
+            "id": "of:0000000000000002",
+            "type": "SWITCH",
+            "available": true,
+            "role": "MASTER",
+            "mfr": "Nicira, Inc.",
+            "hw": "Open vSwitch",
+            "sw": "3.3.4",
+            "serial": "None",
+            "driver": "default",
+            "chassisId": "2",
+            "lastUpdate": "1780334886379",
+            "humanReadableLastUpdate": "connected 7m6s ago",
+            "annotations": {
+                "channelId": "10.42.0.1:58908",
+                "datapathDescription": "s2",
+                "managementAddress": "10.42.0.1",
+                "protocol": "OF_14"
+            }
+        }
+    ]
+}
