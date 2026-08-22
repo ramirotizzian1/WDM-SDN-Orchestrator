@@ -29,7 +29,70 @@ def save_topology(topo):
     with open(get_topology_path(), "w") as f:
         json.dump(topo, f, indent=4)
 
-def update_topology_state(failed_links=None, active_path=None):
+SPECTRUM_DB_PATH = os.path.join(os.path.dirname(__file__), "spectrum_db.json")
+TOTAL_CHANNELS = 96
+
+def init_spectrum_db():
+    topo = load_topology()
+    db = {}
+    for link in topo.get('links', []):
+        link_id = f"{link['source']}-{link['target']}"
+        db[link_id] = [0] * TOTAL_CHANNELS
+        rev_link_id = f"{link['target']}-{link['source']}"
+        db[rev_link_id] = [0] * TOTAL_CHANNELS
+    with open(SPECTRUM_DB_PATH, "w") as f:
+        json.dump(db, f, indent=4)
+
+def load_spectrum_db():
+    if not os.path.exists(SPECTRUM_DB_PATH):
+        init_spectrum_db()
+    with open(SPECTRUM_DB_PATH, "r") as f:
+        return json.load(f)
+
+def save_spectrum_db(db):
+    with open(SPECTRUM_DB_PATH, "w") as f:
+        json.dump(db, f, indent=4)
+
+def find_available_lambda(path):
+    db = load_spectrum_db()
+    available_channels = set(range(TOTAL_CHANNELS))
+    for i in range(len(path) - 1):
+        link_id = f"{path[i]}-{path[i+1]}"
+        if link_id in db:
+            link_status = db[link_id]
+            free_in_link = {ch for ch in available_channels if link_status[ch] == 0}
+            available_channels = available_channels.intersection(free_in_link)
+    if available_channels:
+        return min(available_channels) + 1
+    return None
+
+def allocate_lambda(path, lambda_idx):
+    db = load_spectrum_db()
+    ch_index = lambda_idx - 1
+    for i in range(len(path) - 1):
+        link_id = f"{path[i]}-{path[i+1]}"
+        rev_link_id = f"{path[i+1]}-{path[i]}"
+        if link_id in db:
+            db[link_id][ch_index] = 1
+        if rev_link_id in db:
+            db[rev_link_id][ch_index] = 1
+    save_spectrum_db(db)
+    logger.info(f"Espectro asignado: Lambda {lambda_idx} en {path}")
+
+def free_lambda(path, lambda_idx):
+    db = load_spectrum_db()
+    ch_index = lambda_idx - 1
+    for i in range(len(path) - 1):
+        link_id = f"{path[i]}-{path[i+1]}"
+        rev_link_id = f"{path[i+1]}-{path[i]}"
+        if link_id in db:
+            db[link_id][ch_index] = 0
+        if rev_link_id in db:
+            db[rev_link_id][ch_index] = 0
+    save_spectrum_db(db)
+    logger.info(f"Espectro liberado: Lambda {lambda_idx} en {path}")
+
+def update_topology_state(failed_links=None, active_path=None, active_lambda=None):
     topo = load_topology()
     failed_links = failed_links or []
     
@@ -44,8 +107,9 @@ def update_topology_state(failed_links=None, active_path=None):
             
     # Update active path
     topo['active_path'] = active_path or []
+    topo['active_lambda'] = active_lambda
     save_topology(topo)
-    logger.info(f"Dashboard actualizado. Active path: {active_path}")
+    logger.info(f"Dashboard actualizado. Active path: {active_path} (Lambda: {active_lambda})")
 
 def build_graph(topo):
     G = nx.Graph()
@@ -69,13 +133,33 @@ def calculate_path(graph, src, dst, exclude_links=None):
         logger.error(f"No hay ruta disponible entre {src} y {dst}")
         return None
 
-def validate_qot(path):
-    logger.info(f"Validando QoT en GNPy para la ruta: {path}")
-    logger.info("QoT validada correctamente (OSNR > límite).")
-    return True
+def validate_qot(path, topo, modulation="QPSK"):
+    logger.info(f"Validando QoT en GNPy para la ruta: {path} con modulación {modulation}")
+    
+    total_km = 0
+    links = topo.get('links', [])
+    for i in range(len(path) - 1):
+        u, v = path[i], path[i+1]
+        for link in links:
+            if (link['source'] == u and link['target'] == v) or (link['source'] == v and link['target'] == u):
+                total_km += link['length_km']
+                break
+                
+    logger.info(f"Distancia total física: {total_km} km")
+    
+    thresholds = {"64-QAM": 200, "16-QAM": 400, "QPSK": 2000}
+    max_reach = thresholds.get(modulation, 2000)
+    
+    if total_km > max_reach:
+        msg = f"GNPy Rechazó el circuito: OSNR inaceptable para {modulation} a {total_km}km. Límite físico: {max_reach}km."
+        logger.error(msg)
+        return False, msg
+        
+    logger.info("QoT validada correctamente (OSNR dentro de márgenes físicos).")
+    return True, "OK"
 
-def provision_onos(path):
-    channel_multiplier = 1
+def provision_onos(path, lambda_idx):
+    channel_multiplier = lambda_idx
     flows_success = True
     
     # Mapeo de puertos para la topología física Docker Phase 2
@@ -151,23 +235,98 @@ def provision_onos(path):
 
     return flows_success
 
+def unprovision_onos(path, lambda_idx):
+    channel_multiplier = lambda_idx
+    flows_success = True
+    
+    for i, node in enumerate(path):
+        node_id = int(node.split('-')[1])
+        device_id = f"netconf:10.42.0.1:{11000 + node_id}"
+        
+        try:
+            url = f"{ONOS_URL}/flows/{device_id}"
+            response = requests.get(url, auth=(ONOS_USER, ONOS_PASS))
+            if response.status_code == 200:
+                data = response.json()
+                for flow in data.get('flows', []):
+                    # Verificar si es nuestro flujo y tiene la lambda exacta
+                    is_our_lambda = False
+                    for criteria in flow.get('selector', {}).get('criteria', []):
+                        if criteria.get('type') == 'OCH_SIGID':
+                            if criteria.get('ochSignalId', {}).get('spacingMultiplier') == channel_multiplier:
+                                is_our_lambda = True
+                                break
+                    
+                    if is_our_lambda:
+                        flow_id = flow.get('id')
+                        delete_url = f"{ONOS_URL}/flows/{device_id}/{flow_id}"
+                        del_response = requests.delete(delete_url, auth=(ONOS_USER, ONOS_PASS))
+                        if del_response.status_code not in [200, 204]:
+                            logger.error(f"Error borrando flujo {flow_id} en {device_id}")
+                            flows_success = False
+                        else:
+                            logger.info(f"Flujo {flow_id} borrado de {device_id} (Lambda {lambda_idx})")
+            else:
+                logger.error(f"Fallo al obtener flujos en {device_id}. HTTP {response.status_code}")
+                flows_success = False
+        except Exception as e:
+            logger.error(f"Error conectando con ONOS para borrar en {device_id}: {e}")
+            flows_success = False
+
+    return flows_success
+
 # Global state for the demo
 current_failed_links = []
 SOURCE_NODE = "ROADM-1"
 TARGET_NODE = "ROADM-2"
 
-def reprovision_network():
+active_circuits = []
+circuit_counter = 0
+
+def provision_circuit(src, dst, force_lambda=None, modulation="QPSK"):
+    global circuit_counter
     topo = load_topology()
     graph = build_graph(topo)
     
-    path = calculate_path(graph, SOURCE_NODE, TARGET_NODE, exclude_links=current_failed_links)
-    if path and validate_qot(path):
-        provision_onos(path)
-        update_topology_state(failed_links=current_failed_links, active_path=path)
-        return path
+    path = calculate_path(graph, src, dst, exclude_links=current_failed_links)
+    if not path:
+        update_topology_state(failed_links=current_failed_links, active_path=[], active_lambda=None)
+        return None, "No hay ruta física disponible."
+        
+    qot_ok, msg = validate_qot(path, topo, modulation)
+    if qot_ok:
+        if force_lambda is not None:
+            new_lambda = int(force_lambda)
+            logger.info(f"El usuario forzó la selección de la Lambda: {new_lambda}")
+        else:
+            new_lambda = find_available_lambda(path)
+            
+        if new_lambda is None:
+            logger.error("Bloqueo RWA: No hay lambdas libres continuas en la ruta.")
+            update_topology_state(failed_links=current_failed_links, active_path=[], active_lambda=None)
+            return None, "Bloqueo de espectro (sin lambdas disponibles)"
+            
+        allocate_lambda(path, new_lambda)
+        provision_onos(path, new_lambda)
+        
+        # Guardar en base de datos en memoria
+        circuit_counter += 1
+        circuit_id = f"CIR-{circuit_counter}"
+        circuit_data = {
+            "id": circuit_id,
+            "src": src,
+            "dst": dst,
+            "lambda": new_lambda,
+            "modulation": modulation,
+            "path": path
+        }
+        active_circuits.append(circuit_data)
+        
+        update_topology_state(failed_links=current_failed_links, active_path=path, active_lambda=new_lambda)
+        return path, new_lambda
     else:
-        update_topology_state(failed_links=current_failed_links, active_path=[])
-        return None
+        update_topology_state(failed_links=current_failed_links, active_path=[], active_lambda=None)
+        return None, msg
 
 @app.route("/api/status", methods=["GET"])
 def get_status():
@@ -177,14 +336,56 @@ def get_status():
         "target": TARGET_NODE
     })
 
+@app.route("/api/spectrum", methods=["GET"])
+def get_spectrum():
+    db = load_spectrum_db()
+    return jsonify(db)
+
 @app.route("/api/provision", methods=["POST"])
 def provision():
-    global current_failed_links
-    current_failed_links = []
-    path = reprovision_network()
+    global current_failed_links, SOURCE_NODE, TARGET_NODE
+    
+    data = request.json or {}
+    force_lambda = data.get("force_lambda")
+    modulation = data.get("modulation", "QPSK")
+    
+    if "source" in data and data["source"]:
+        SOURCE_NODE = data["source"]
+    if "target" in data and data["target"]:
+        TARGET_NODE = data["target"]
+        
+    logger.info(f"Petición de circuito: {SOURCE_NODE} -> {TARGET_NODE} | Modulación: {modulation}")
+    
+    path, response_data = provision_circuit(SOURCE_NODE, TARGET_NODE, force_lambda=force_lambda, modulation=modulation)
     if path:
-        return jsonify({"status": "success", "path": path})
-    return jsonify({"status": "error", "message": "No path found"}), 404
+        return jsonify({"status": "success", "path": path, "lambda": response_data})
+    return jsonify({"status": "error", "message": response_data}), 400
+
+@app.route("/api/free", methods=["POST"])
+def free_endpoint():
+    data = request.json or {}
+    src = data.get("source")
+    dst = data.get("target")
+    lambda_idx = data.get("force_lambda")
+    
+    if not src or not dst or not lambda_idx:
+        return jsonify({"status": "error", "message": "Debe especificar Origen, Destino y una Lambda"}), 400
+        
+    topo = load_topology()
+    graph = build_graph(topo)
+    path = calculate_path(graph, src, dst, exclude_links=current_failed_links)
+    
+    if path:
+        free_lambda(path, int(lambda_idx))
+        unprovision_onos(path, int(lambda_idx))
+        
+        # Eliminar de active_circuits si existe
+        global active_circuits
+        active_circuits = [c for c in active_circuits if not (c["src"] == src and c["dst"] == dst and c["lambda"] == int(lambda_idx))]
+        
+        return jsonify({"status": "success", "message": f"Lambda {lambda_idx} liberada exitosamente en ONOS"})
+        
+    return jsonify({"status": "error", "message": "No se pudo calcular la ruta para liberar"}), 404
 
 @app.route("/api/cut", methods=["POST"])
 def cut_link():
@@ -199,9 +400,39 @@ def cut_link():
         current_failed_links.append(link_tuple)
         
     logger.warning(f"Simulando corte de fibra: {src}-{dst}")
-    path = reprovision_network()
     
-    return jsonify({"status": "success", "new_path": path, "cut": link_tuple})
+    # Identificar y rerutear todos los circuitos afectados
+    global active_circuits
+    affected_circuits = []
+    
+    for c in active_circuits:
+        path = c["path"]
+        broken = False
+        for i in range(len(path) - 1):
+            u, v = path[i], path[i+1]
+            if (u == src and v == dst) or (u == dst and v == src):
+                broken = True
+                break
+        if broken:
+            affected_circuits.append(c)
+            
+    last_path = None
+    for c in affected_circuits:
+        logger.info(f"Restauración Masiva: Reruteando circuito {c['id']} ({c['src']}->{c['dst']})")
+        # 1. Liberar configuración vieja
+        free_lambda(c["path"], c["lambda"])
+        unprovision_onos(c["path"], c["lambda"])
+        active_circuits.remove(c)
+        
+        # 2. Aprovisionar nuevo circuito (intentando mantener la misma lambda original)
+        new_path, response_data = provision_circuit(c["src"], c["dst"], force_lambda=c["lambda"], modulation=c["modulation"])
+        if new_path:
+            logger.info(f"Circuito {c['id']} salvado. Nueva ruta: {new_path} con Lambda {c['lambda']}")
+            last_path = new_path
+        else:
+            logger.error(f"Circuito {c['id']} perdido. Causa: {response_data}")
+    
+    return jsonify({"status": "success", "new_path": last_path, "cut": link_tuple})
 
 @app.route("/api/restore", methods=["POST"])
 def restore_link():
@@ -215,12 +446,13 @@ def restore_link():
     current_failed_links = [l for l in current_failed_links if l != link_tuple and l != rev_tuple]
     
     logger.info(f"Restaurando corte de fibra: {src}-{dst}")
-    path = reprovision_network()
     
-    return jsonify({"status": "success", "new_path": path})
+    # Para el demo, al restaurar el cable simplemente limpiamos la UI. 
+    # Los circuitos permanecen en sus rutas de backup actuales.
+    update_topology_state(failed_links=current_failed_links, active_path=[], active_lambda=None)
+    
+    return jsonify({"status": "success", "new_path": None})
 
 if __name__ == "__main__":
     logger.info("Iniciando SDN Bridge API en el puerto 5000...")
-    # Aprovisionamiento inicial
-    reprovision_network()
     app.run(host="0.0.0.0", port=5000, debug=False)

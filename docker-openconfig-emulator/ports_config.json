@@ -1,0 +1,28 @@
+{
+  "ports": {
+    "netconf:10.42.0.1:11001/201": {
+      "optical": { "type": "OCH", "tunable": true }
+    },
+    "netconf:10.42.0.1:11001/202": {
+      "optical": { "type": "OCH", "tunable": true }
+    },
+    "netconf:10.42.0.1:11002/201": {
+      "optical": { "type": "OCH", "tunable": true }
+    },
+    "netconf:10.42.0.1:11002/202": {
+      "optical": { "type": "OCH", "tunable": true }
+    },
+    "netconf:10.42.0.1:11003/201": {
+      "optical": { "type": "OCH", "tunable": true }
+    },
+    "netconf:10.42.0.1:11003/202": {
+      "optical": { "type": "OCH", "tunable": true }
+    },
+    "netconf:10.42.0.1:11004/201": {
+      "optical": { "type": "OCH", "tunable": true }
+    },
+    "netconf:10.42.0.1:11004/202": {
+      "optical": { "type": "OCH", "tunable": true }
+    }
+  }
+}

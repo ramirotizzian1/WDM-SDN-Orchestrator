@@ -93,3 +93,30 @@ Esta experimentación permitió aislar el verdadero límite de la simulación me
 1. **Falta de Reporte Espectral (`LambdaQuery`):** En hardware real (ej: un ROADM Lumentum o Cassini real), el equipo responde a las consultas NETCONF exponiendo su matriz de espectro óptico (ej: "Soporte DWDM 50GHz, 96 canales libres"). 
 2. **Fallo del Asignador RSA:** Los contenedores con *Netopeer2*, si bien emulan a la perfección los árboles de configuración YANG para conmutar puertos, carecen de los drivers de hardware subyacentes fotónicos. Al no poder reportarle a ONOS la grilla de lambdas disponibles en la fibra, el `ResourceService` de ONOS no puede asignar recursos de espectro.
 3. **Validación del Diseño:** Al faltar el reporte espectral, el compilador de *Intents* se detiene. Esto valida y justifica el uso de la arquitectura **Hierarchical SDN** adoptada (Opción B): delegar la Inteligencia y Asignación de Espectro (RSA) al Orquestador Superior (`bridge_agent.py` + GNPy) y utilizar ONOS exclusivamente como el traductor universal y ejecutor de bajo nivel (`FlowRules`). Esta es exactamente la arquitectura recomendada en implementaciones reales *Carrier-Class* para Redes Ópticas Desglosadas.
+
+#### 8. Implementación del Motor RWA (Routing and Wavelength Assignment) y Control Espectral
+Para superar la falta de asignador RSA dentro de ONOS analizada en la sección anterior, se desarrolló un motor de Asignación de Longitud de Onda original en el orquestador Python (`bridge_agent.py`):
+1. **Base de Datos de Estado Local (`spectrum_db.json`):** El orquestador mantiene una matriz persistente con los 96 canales de la grilla DWDM de 50GHz para cada enlace bidireccional físico de la red.
+2. **Algoritmo *First-Fit*:** Al calcular un nuevo circuito tras una petición (o tras un corte de fibra), la función `find_available_lambda()` realiza una operación matemática de intersección de conjuntos a lo largo de toda la ruta calculada. Esto garantiza matemáticamente el cumplimiento de la **Restricción de Continuidad de Longitud de Onda**, seleccionando y bloqueando automáticamente el primer canal (Lambda) disponible.
+3. **Control desde la Capa de Aplicación:** Se expandió la interfaz de usuario (Dashboard React) permitiendo al operador forzar una Lambda específica para un servicio. Si se ingresa la "Lambda 15", el Dashboard se comunica vía API REST con el orquestador, el cual omite el algoritmo automático, bloquea el canal 15 en la base de datos local y propaga la orden WDM a ONOS codificada en el payload `spacingMultiplier=15`.
+4. **Prueba Empírica del Emulador:** Durante el desarrollo de este módulo, se auditaron los contenedores `oc-cassini` (Netopeer2) ejecutando el comando de inspección interna `sysrepoctl -l`. Se comprobó que las imágenes de la ONF carecen del módulo `openconfig-terminal-device` necesario para el almacenamiento de parámetros fotónicos. Esto constituyó la prueba empírica definitiva de que los contenedores WDM de esta versión actúan como meros *proxies* lógicos que descartan los valores de frecuencia, re-confirmando que la inteligencia de espectro (OLS) DEBE residir sí o sí en un componente superior (como el `bridge_agent.py`), replicando el estándar Cognitive Optical Network.
+
+#### 9. Multiplexación WDM Real y Liberación Específica de Flujos
+Para simular el funcionamiento de un entorno Carrier-Class real, el controlador soporta *Multiplexación WDM*, permitiendo la acumulación de múltiples circuitos en la misma fibra. Adicionalmente, se desarrolló el endpoint `/api/free` el cual:
+1. Mapea la petición de liberación a un servicio activo.
+2. Consulta la API REST de ONOS (`GET /onos/v1/flows/{deviceId}`) para auditar las reglas configuradas.
+3. Busca iterativamente la regla que contiene el selector `OCH_SIGID` con el `spacingMultiplier` correspondiente a la lambda deseada.
+4. Envía la orden HTTP DELETE apuntando al `flowId` exacto, eliminando la frecuencia de la memoria del ROADM físico y del plano de datos sin afectar a los demás servicios multiplexados (Traffic Isolation).
+
+#### 10. Modelado de Capa Física Predictiva (QoT) con Formatos de Modulación
+Se implementó una simulación predictiva en la función `validate_qot()` de Python para replicar el comportamiento del motor físico (GNPy). El sistema:
+1. Lee las distancias físicas (km) entre nodos desde el archivo maestro `topology.json`.
+2. Habilita al usuario la selección de formato de modulación óptica en el dashboard (QPSK, 16-QAM, 64-QAM).
+3. Evalúa la viabilidad de la OSNR cruzando la longitud total de la ruta calculada contra el umbral máximo de tolerancia del formato (Ej: 64-QAM restringe a 200 km por su alta sensibilidad, mientras que QPSK sobrevive hasta 2000 km).
+Si el umbral es violado, la orquestación falla proactivamente evitando caídas en el hardware.
+
+#### 11. Memoria de Estado y Restauración Masiva Ante Fallos
+El agente de orquestación cuenta con una memoria persistente (`active_circuits`) de todos los servicios inyectados en ONOS. Al presentarse un corte de fibra:
+1. Escanea su memoria e identifica *todos* los circuitos multiplexados que transitaban por el enlace afectado.
+2. Des-aprovisiona las reglas obsoletas y ejecuta un *Mass Rerouting* para cada uno de los clientes hacia caminos de contingencia.
+3. Al encontrar nuevas rutas, el motor RSA respeta estrictamente la *Wavelength Continuity Constraint* al pasar el parámetro original (`force_lambda=c["lambda"]`), garantizando que el servicio mantenga su "color" óptico (frecuencia) a lo largo del proceso de restauración.

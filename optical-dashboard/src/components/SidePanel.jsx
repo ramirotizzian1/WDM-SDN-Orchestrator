@@ -105,6 +105,7 @@ export default function SidePanel({ element }) {
             </div>
             
             <EdgeControls data={data} />
+            <SpectrumAnalyzer source={data.source} target={data.target} />
           </>
         )}
       </div>
@@ -252,6 +253,74 @@ function OnosMetrics({ nodeId }) {
       <InfoRow label="Fabricante" value={metrics.hardware} />
       <InfoRow label="Puertos Ópticos (OCh)" value={metrics.opticalPorts} />
       <InfoRow label="Flujos Instalados" value={metrics.activeFlows} color="#38bdf8" />
+    </div>
+  );
+}
+
+function SpectrumAnalyzer({ source, target }) {
+  const [spectrum, setSpectrum] = React.useState(null);
+  
+  React.useEffect(() => {
+    let mounted = true;
+    const fetchSpectrum = async () => {
+      try {
+        const res = await fetch('http://localhost:5000/api/spectrum');
+        const data = await res.json();
+        if (mounted) {
+          const linkId = `${source}-${target}`;
+          setSpectrum(data[linkId]);
+        }
+      } catch (err) {
+        console.error("Error al obtener espectro:", err);
+      }
+    };
+    
+    fetchSpectrum();
+    const interval = setInterval(fetchSpectrum, 2000);
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
+  }, [source, target]);
+
+  if (!spectrum) return null;
+
+  // Calcular estadísticas
+  const occupiedCount = spectrum.filter(x => x === 1).length;
+
+  return (
+    <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px dashed var(--panel-border)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
+        <h3 style={{ fontSize: '0.9rem', color: 'var(--accent)', margin: 0 }}>Uso de Espectro (DWDM)</h3>
+        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{occupiedCount}/96 Ocupados</span>
+      </div>
+      
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px' }}>
+        {spectrum.map((isOccupied, idx) => (
+          <div 
+            key={idx}
+            title={`Lambda ${idx + 1}`}
+            style={{
+              width: '10px', height: '14px',
+              backgroundColor: isOccupied ? 'var(--accent-danger)' : 'var(--accent-success)',
+              borderRadius: '2px',
+              opacity: isOccupied ? 1 : 0.3,
+              cursor: 'help'
+            }}
+          />
+        ))}
+      </div>
+      
+      <div style={{ display: 'flex', gap: '1rem', marginTop: '0.8rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <div style={{ width: '8px', height: '8px', backgroundColor: 'var(--accent-success)', opacity: 0.3, borderRadius: '1px' }}></div>
+          Libre
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <div style={{ width: '8px', height: '8px', backgroundColor: 'var(--accent-danger)', borderRadius: '1px' }}></div>
+          Ocupado
+        </div>
+      </div>
     </div>
   );
 }

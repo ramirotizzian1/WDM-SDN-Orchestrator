@@ -20,3 +20,7 @@ dist/
 
 # Git
 .git/
+
+# Bases de datos de estado
+spectrum_db.json
+circuits_db.json

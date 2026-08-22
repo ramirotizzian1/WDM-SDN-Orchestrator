@@ -83,11 +83,14 @@
             "osnr_db": 25.8,
             "modulation": "16-QAM",
             "spans": 2,
-            "status": "active"
+            "status": "down"
         }
     ],
     "active_path": [
         "ROADM-1",
-        "ROADM-2"
-    ]
+        "ROADM-2",
+        "ROADM-3",
+        "ROADM-4"
+    ],
+    "active_lambda": 30
 }
