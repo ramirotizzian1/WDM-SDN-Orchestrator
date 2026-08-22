@@ -1,9 +1,0 @@
-{
-  "components": {
-    "org.onosproject.provider.nil.NullProviders": {
-      "topoShape": "reroute",
-      "deviceCount": "4",
-      "enabled": "true"
-    }
-  }
-}
