@@ -6,6 +6,24 @@ Desarrollado como parte de las prácticas profesionales de Ingeniería de Teleco
 
 ## Arquitectura del Sistema
 
+```mermaid
+graph TD
+    UI[Dashboard Web React] <-->|REST API| OLS[Orquestador Python RWA]
+    OLS <-->|Consulta OSNR / QoT| GNPY[GNPy Motor Físico]
+    OLS <-->|Inyección de Flujos WDM| ONOS[ONOS SDN Controller]
+    
+    ONOS <-->|NETCONF / OpenConfig| R1[ROADM-1 Cassini]
+    ONOS <-->|NETCONF / OpenConfig| R2[ROADM-2 Cassini]
+    ONOS <-->|NETCONF / OpenConfig| R3[ROADM-3 Cassini]
+    ONOS <-->|NETCONF / OpenConfig| R4[ROADM-4 Cassini]
+    
+    R1 <-->|Fibra G.652| R2
+    R2 <-->|Fibra G.652| R3
+    R3 <-->|Fibra G.652| R4
+    R4 <-->|Fibra G.652| R1
+```
+
+
 El entorno está distribuido y orquestado mediante microservicios y emulación nativa de hardware:
 
 1. **Orquestación (Kubernetes/K3s y Docker):**
